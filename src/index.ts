@@ -11,11 +11,11 @@ export type {
     LLMAdapter,
 } from "./types.js";
 
-export { gradedMatch } from "./gradedmatch.js";
-export type { GradedMatchOptions } from "./gradedmatch.js";
+export { gradedMatch } from "./gradedMatch.js";
+export type { GradedMatchOptions } from "./gradedMatch.js";
 
-export { auditConfidence } from "./auditconfidence.js";
-export type { AuditWarning } from "./auditconfidence.js";
+export { auditConfidence } from "./auditConfidence.js";
+export type { AuditWarning } from "./auditConfidence.js";
 
 export { anthropicAdapter } from "./adapters/anthropic.js";
 export type { AnthropicAdapterOptions } from "./adapters/anthropic.js";

@@ -7,7 +7,8 @@
     "type": "module",
     "scripts": {
         "build": "tsc",
-        "prepublishOnly": "npm run build"
+        "test": "tsc && test -d dist/__tests__ && node --test dist/__tests__/*.test.js",
+        "prepublishOnly": "npm run build && npm test"
     },
     "keywords": [
         "llm",
@@ -35,7 +36,8 @@
         "@types/node": "^20.0.0"
     },
     "files": [
-        "dist"
+        "dist",
+        "!dist/__tests__"
     ],
     "repository": {
         "type": "git",
