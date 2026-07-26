@@ -19,33 +19,57 @@ implement for any other provider.
 
 ## Quick example
 
+See [`examples/basic-example.ts`](./examples/basic-example.ts) for the full
+runnable version. Deliberately not about clothing, to show this isn't just
+Suitability's fit-matching logic renamed - here it's ranking apartment
+listings against a budget, a pet-ownership constraint, and an unknown
+move-in date:
+
 ```ts
-import { defineSubject, known, unknown, gradedMatch, auditConfidence, anthropicAdapter } from "known-unknowns";
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic();
-
 const subject = defineSubject({
-  budget: known(500),
-  timeline: unknown(),
+  monthlyBudget: known(1800),
+  hasPet: known(true),
+  moveInDate: unknown(),
 });
 
 const result = await gradedMatch({
   subject,
-  candidates: [
-    { id: "a", title: "Option A" },
-    { id: "b", title: "Option B" },
-  ],
-  avoidRules: [{ field: "contractLength", values: ["12-month-lock-in"] }],
+  candidates: apartmentListings, // mixed data quality on purpose - some listings
+                                  // give an exact rent, one only says "affordable"
+  avoidRules: [{ field: "floor", values: ["0"], note: "no ground-floor units" }],
   llm: anthropicAdapter(client),
 });
 
-console.log(result.rankings);
-
 const warnings = auditConfidence(result);
-// flags things like: a top-ranked result with Low confidence, or
-// inconsistent confidence across similarly-evidenced candidates
 ```
+
+### Real output from a live run
+
+No hand-editing below - this is what came back the first time this example
+was actually run against Claude:
+
+```
+#1 2-bed flat, 3rd floor, Clapham [High confidence, measurement]
+Rent $1750 is within the $1800 budget, petsAllowed is true matching hasPet,
+and floor 3 does not violate the ground-floor avoid rule. All relevant
+fields are stated and consistent with the subject.
+
+#2 Cosy studio, central location [Medium confidence, descriptor]
+The description explicitly states 'no pets policy strictly enforced,' which
+conflicts with the subject's hasPet=true. This is a fairly clear
+descriptor-based conflict but not a structured field, so confidence is
+Medium rather than High. Rent and floor are unknown for this listing, so
+budget fit and the ground-floor rule cannot be verified.
+
+#3 1-bed flat, ground floor, Brixton [High confidence, measurement]
+Rent $1600 and petsAllowed=true both match well, but floor is explicitly
+stated as 0, which directly violates the avoid rule. This is a confirmed
+measurement-based conflict, so it outweighs the otherwise good rent/pet
+match and ranks this candidate last.
+```
+
+No audit warnings fired on this run - confidence levels tracked evidence
+quality correctly without any manual correction.
 
 ## Why this exists
 
@@ -78,9 +102,11 @@ that distinction consistently.
 
 ## Status
 
-v0.1 - core matching and audit logic is implemented and type-checks cleanly.
-Not yet published to npm. Extracted from and validated against a real,
-working project (Suitability) rather than built in isolation.
+v0.1 - core matching and audit logic is implemented, fully tested (11
+passing tests including a reproduction of the exact bug that motivated
+this package), and validated live against Claude on a domain it wasn't
+built for (apartment hunting, not clothing) with zero manual correction
+needed. Not yet published to npm.
 
 ## License
 
