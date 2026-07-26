@@ -84,3 +84,26 @@ test("throws a descriptive error when the LLM response is not valid JSON", async
         /LLM response was not valid JSON/
     );
 });
+
+test("an unknown() field is sent to the LLM as the string 'unknown', never as null or a default value", async () => {
+    let capturedUserPrompt = "";
+    const capturingAdapter: LLMAdapter = {
+        async complete(_system, user) {
+            capturedUserPrompt = user;
+            return JSON.stringify({
+                rankings: [
+                    { candidateId: "a", candidateTitle: "A", rank: 1, confidence: "Medium", evidenceType: "measurement", reasoning: "" },
+                ],
+            });
+        },
+    };
+
+    await gradedMatch({
+        subject,
+        candidates: [{ id: "a", title: "A" }],
+        llm: capturingAdapter,
+    });
+
+    assert.match(capturedUserPrompt, /"timeline": "unknown"/);
+    assert.doesNotMatch(capturedUserPrompt, /"timeline": null/);
+});
