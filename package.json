@@ -24,7 +24,7 @@
     "author": "Bowo Adejuyigbe",
     "license": "MIT",
     "peerDependencies": {
-        "@anthropic-ai/sdk": "^0.30.0"
+        "@anthropic-ai/sdk": "^0.30.1"
     },
     "peerDependenciesMeta": {
         "@anthropic-ai/sdk": {
@@ -32,8 +32,8 @@
         }
     },
     "devDependencies": {
-        "typescript": "^5.5.0",
-        "@types/node": "^20.0.0"
+        "@types/node": "^20.0.0",
+        "typescript": "^5.5.0"
     },
     "files": [
         "dist",
