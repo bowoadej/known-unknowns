@@ -108,6 +108,16 @@ this package), and validated live against Claude on a domain it wasn't
 built for (apartment hunting, not clothing) with zero manual correction
 needed. Not yet published to npm.
 
+## Roadmap
+
+- [ ] CrewAI / LangChain Tool adapter - wrap `gradedMatch`/`auditConfidence`
+  as a droppable Tool for either framework's agent pipelines, so other
+  people's multi-agent systems can use the confidence-consistency logic
+  directly, not just single-call scripts like this package's own examples
+- [ ] Once the Tool adapter exists, use it inside
+  [Suitability](https://github.com/bowoadej/suitability)'s planned
+  multi-agent orchestration.
+
 ## License
 
 MIT

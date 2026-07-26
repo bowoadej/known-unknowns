@@ -1,6 +1,6 @@
 {
     "name": "known-unknowns",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Stops LLM agents from silently guessing what they don't know",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
