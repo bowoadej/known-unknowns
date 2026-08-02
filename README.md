@@ -116,7 +116,13 @@ needed. Not yet published to npm.
   directly, not just single-call scripts like this package's own examples
 - [ ] Once the Tool adapter exists, use it inside
   [Suitability](https://github.com/bowoadej/suitability)'s planned
-  multi-agent orchestration.
+  multi-agent orchestration, so the two projects reinforce each other
+  instead of duplicating logic
+- [ ] Multi-provider MCP support - the MCP server currently hardcodes
+  Anthropic. The core library is already provider-agnostic (any
+  `LLMAdapter` works), so adding an `openaiAdapter` and a provider-select
+  env var to the MCP server should be a small increment, not a rewrite -
+  deliberately scoped out of v0.1 to validate the Anthropic path first
 
 ## License
 

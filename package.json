@@ -5,10 +5,15 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "type": "module",
+    "bin": {
+        "known-unknowns-mcp": "./dist/mcpServer.js"
+    },
     "scripts": {
         "build": "tsc",
-        "test": "tsc && test -d dist/__tests__ && node --test dist/__tests__/*.test.js",
-        "prepublishOnly": "npm run build && npm test"
+        "test": "tsx --test src/__tests__/**/*.test.ts",
+        "mcp": "tsx src/mcpServer.ts",
+        "test:mcp": "tsx scripts/test-mcp-client.ts",
+        "prepublishOnly": "npm run build"
     },
     "keywords": [
         "llm",
@@ -19,25 +24,26 @@
         "selective-prediction",
         "hallucination",
         "claude",
-        "anthropic"
+        "anthropic",
+        "mcp",
+        "model-context-protocol",
+        "crewai",
+        "langchain"
     ],
     "author": "Bowo Adejuyigbe",
     "license": "MIT",
-    "peerDependencies": {
-        "@anthropic-ai/sdk": "^0.30.1"
-    },
-    "peerDependenciesMeta": {
-        "@anthropic-ai/sdk": {
-            "optional": true
-        }
+    "dependencies": {
+        "@anthropic-ai/sdk": "^0.30.0",
+        "@modelcontextprotocol/sdk": "^1.0.0",
+        "zod": "^3.25.0"
     },
     "devDependencies": {
+        "typescript": "^5.5.0",
         "@types/node": "^20.0.0",
-        "typescript": "^5.5.0"
+        "tsx": "^4.19.0"
     },
     "files": [
-        "dist",
-        "!dist/__tests__"
+        "dist"
     ],
     "repository": {
         "type": "git",
