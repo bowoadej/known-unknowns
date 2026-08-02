@@ -130,7 +130,7 @@ this package), and validated live against Claude on a domain it wasn't
 built for (apartment hunting, not clothing) with zero manual correction
 needed. An MCP server exposing both tools is built and verified
 end-to-end via a real client (spawn, connect, discover tools, call a tool,
-get back the expected result) - not just a mock. Not yet published to npm.
+get back the expected result) - not just a mock.
 
 ## Roadmap
 
