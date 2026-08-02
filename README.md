@@ -87,6 +87,28 @@ the model to distinguish measurement-backed conclusions from inferred ones,
 and by giving you `auditConfidence` to catch the cases where it didn't apply
 that distinction consistently.
 
+## MCP Server
+
+known-unknowns also ships as an MCP server, so `graded_match` and
+`audit_confidence` can be used as tools by any MCP-compatible client -
+CrewAI, LangChain, Claude Desktop, Claude Code, or your own agent.
+
+```bash
+export ANTHROPIC_API_KEY=your_key_here
+npx known-unknowns-mcp
+```
+
+**A gotcha worth knowing before you wire this into your own client:** MCP's
+stdio transport does not automatically forward your shell's environment
+variables to the spawned server - this is a deliberate security choice
+(a spawned server shouldn't automatically see every secret sitting in your
+shell), not a bug. Whatever client you connect with needs to explicitly
+declare `ANTHROPIC_API_KEY` in its own MCP server config (e.g. an `env`
+block in a `.mcp.json` or `claude_desktop_config.json`, or an `env` option
+if you're wiring up `StdioClientTransport` yourself) - just having the key
+exported in your terminal is not enough. `scripts/test-mcp-client.ts` in
+this repo shows a working example of forwarding it explicitly.
+
 ## API
 
 - **`known(value)` / `unknown()`** - wrap a subject field so "not provided"
@@ -106,15 +128,18 @@ v0.1 - core matching and audit logic is implemented, fully tested (11
 passing tests including a reproduction of the exact bug that motivated
 this package), and validated live against Claude on a domain it wasn't
 built for (apartment hunting, not clothing) with zero manual correction
-needed. Not yet published to npm.
+needed. An MCP server exposing both tools is built and verified
+end-to-end via a real client (spawn, connect, discover tools, call a tool,
+get back the expected result) - not just a mock. Not yet published to npm.
 
 ## Roadmap
 
-- [ ] CrewAI / LangChain Tool adapter - wrap `gradedMatch`/`auditConfidence`
-  as a droppable Tool for either framework's agent pipelines, so other
-  people's multi-agent systems can use the confidence-consistency logic
-  directly, not just single-call scripts like this package's own examples
-- [ ] Once the Tool adapter exists, use it inside
+- [x] MCP server exposing `graded_match` and `audit_confidence` - this is
+  the actual mechanism that makes known-unknowns usable from CrewAI (which
+  has no official JS/TS SDK) as well as LangChain, Claude Desktop, and any
+  other MCP-compatible client, without maintaining a separate adapter per
+  framework
+- [ ] Once used in a real agent pipeline, use it inside
   [Suitability](https://github.com/bowoadej/suitability)'s planned
   multi-agent orchestration, so the two projects reinforce each other
   instead of duplicating logic
