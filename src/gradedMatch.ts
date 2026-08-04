@@ -1,4 +1,4 @@
-import { AvoidRule, Candidate, GradedMatchResult, LLMAdapter, Subject } from "./types.js";
+import { AvoidRule, Candidate, GradedMatchResult, LLMAdapter, Subject, ToolSchema } from "./types.js";
 
 const SYSTEM_PROMPT = `You are a matching assistant. You are given a "subject" (a set of
 fields, some marked "known" with a value, others explicitly marked "unknown" -
@@ -6,7 +6,7 @@ unknown fields are intentionally unspecified, not zero or average) and a list
 of candidates to rank against that subject.
 
 Your job: rank the candidates from best to worst match, and explain your
-reasoning for each one.
+reasoning for each one, by calling the record_rankings tool.
 
 Rules you must follow:
 
@@ -37,23 +37,45 @@ Rules you must follow:
    an evidenceType ("measurement", "descriptor", "inferred", or "mixed")
    describing what kind of evidence the ranking rests on.
 
-5. Be concise. One short paragraph of reasoning per candidate, not an essay.
+5. Be concise. One short paragraph of reasoning per candidate, not an essay.`;
 
-Return your answer as JSON matching this shape:
-{
-  "rankings": [
-    {
-      "candidateId": "...",
-      "candidateTitle": "...",
-      "rank": 1,
-      "confidence": "High" | "Medium" | "Low",
-      "evidenceType": "measurement" | "descriptor" | "inferred" | "mixed",
-      "reasoning": "..."
-    }
-  ]
-}
-
-Return ONLY the JSON, no other text, no markdown code fences.`;
+// The JSON Schema for the tool the model is forced to call. This replaces the
+// old "return JSON shaped like this" instruction in the prompt - instead of
+// asking and hoping, the schema is enforced by the provider's tool-use
+// mechanism. additionalProperties:false and a full required list are needed
+// for Anthropic's strict mode to engage.
+const RANKING_TOOL_SCHEMA: ToolSchema = {
+    name: "record_rankings",
+    description:
+        "Record the ranked candidates with confidence and evidence type for each. " +
+        "Call this exactly once with the full ranked list.",
+    inputSchema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["rankings"],
+        properties: {
+            rankings: {
+                type: "array",
+                items: {
+                    type: "object",
+                    additionalProperties: false,
+                    required: ["candidateId", "candidateTitle", "rank", "confidence", "evidenceType", "reasoning"],
+                    properties: {
+                        candidateId: { type: "string" },
+                        candidateTitle: { type: "string" },
+                        rank: { type: "integer" },
+                        confidence: { type: "string", enum: ["High", "Medium", "Low"] },
+                        evidenceType: {
+                            type: "string",
+                            enum: ["measurement", "descriptor", "inferred", "mixed"],
+                        },
+                        reasoning: { type: "string" },
+                    },
+                },
+            },
+        },
+    },
+};
 
 function serializeSubject(subject: Subject): Record<string, unknown> {
     const out: Record<string, unknown> = {};
@@ -81,6 +103,16 @@ Rank these candidates against the subject and explain your reasoning,
 following the rules in your instructions.`;
 }
 
+// Even with strict tool use guaranteeing the STRUCTURE, this validates the
+// result is actually shaped like a GradedMatchResult before we trust it -
+// a cheap defensive check, and the one place a non-Anthropic adapter that
+// doesn't enforce the schema as strictly would get caught.
+function isGradedMatchResult(value: unknown): value is GradedMatchResult {
+    if (typeof value !== "object" || value === null) return false;
+    const maybe = value as { rankings?: unknown };
+    return Array.isArray(maybe.rankings);
+}
+
 export interface GradedMatchOptions {
     subject: Subject;
     candidates: Candidate[];
@@ -94,22 +126,15 @@ export async function gradedMatch(
     const { subject, candidates, avoidRules = [], llm } = options;
 
     const userPrompt = buildUserPrompt(subject, candidates, avoidRules);
-    const rawResponse = await llm.complete(SYSTEM_PROMPT, userPrompt);
+    const result = await llm.completeStructured(SYSTEM_PROMPT, userPrompt, RANKING_TOOL_SCHEMA);
 
-    let cleaned = rawResponse.trim();
-    if (cleaned.startsWith("```")) {
-        cleaned = cleaned.replace(/^```(json)?/, "").replace(/```$/, "").trim();
-    }
-
-    let parsed: GradedMatchResult;
-    try {
-        parsed = JSON.parse(cleaned) as GradedMatchResult;
-    } catch (err) {
+    if (!isGradedMatchResult(result)) {
         throw new Error(
-            `known-unknowns: LLM response was not valid JSON.\nRaw response:\n${rawResponse}`
+            `known-unknowns: structured response did not match the expected shape.\n` +
+            `Got: ${JSON.stringify(result)}`
         );
     }
 
-    parsed.rankings.sort((a, b) => a.rank - b.rank);
-    return parsed;
+    result.rankings.sort((a, b) => a.rank - b.rank);
+    return result;
 }
